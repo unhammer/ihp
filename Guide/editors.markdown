@@ -34,15 +34,23 @@ Recommended packages:
 ## Using IHP with Emacs
 
 Install the following packages from [Melpa](https://melpa.org/#/getting-started):
-- `dante` – gives IDE features via ghci, see https://github.com/jyp/dante#installation
+- `lsp-mode` – gives Language Server support, see https://emacs-lsp.github.io/lsp-mode/page/installation/
+- `lsp-haskell` – connects LSP to Haskell Language Server, see https://github.com/emacs-lsp/lsp-haskell#emacs-configuration
 - `direnv-mode` – lets haskell-mode and dante-mode find the PATH to ghci, see https://github.com/wbolster/emacs-direnv#installation
-- `attrap` (optional) – apply fixes at point, see https://github.com/jyp/attrap
 
 and put a `.dir-locals.el` file in your project root with:
 ```emacs-lisp
 ((nil
-  (dante-repl-command-line . ("ghci"))
-  (haskell-process-type . ghci)))
+  (haskell-process-type . ghci)
+  (lsp-haskell-process-path-hie . "haskell-language-server-wrapper")
+  (lsp-enable-symbol-highlighting . nil)))
+```
+
+(We turn off symbol highlighting since it interacts badly with hsx syntax highlighting.)
+
+By default, all the LSP features have keybindings starting with super-L, which on some systems locks the screen. If you want to change this, put the following line in your init file *before* lsp gets loaded:
+```emacs-lisp
+(setq lsp-keymap-prefix "s-s") ; if you want lsp features on super-s
 ```
 
 ## Using IHP with Vim / NeoVim
@@ -70,7 +78,7 @@ IHP currently uses v0.4 of haskell language server.
 
 Because haskell language server is tightly coupled to the GHC version it comes pre-bundled with IHP. In case you also have a local install of haskell language server you need to make sure that the one provided by IHP is used. Ususally this is done automatically when your editor is picking up the `.envrc` file.
 
-When something goes wrong you can also run `haskell-language-server` inside the project directory. This might output some helpful error messages.
+When something goes wrong you can also run `haskell-language-server --debug` inside the project directory. This might output some helpful error messages.
 
 If you get an error like `error: attribute 'haskell-language-server' missing`: Make sure your `Config/nix/nixpkgs-config.nix` is using the latest nixpkgs version used by IHP.
 
