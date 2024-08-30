@@ -89,8 +89,8 @@ We can also include links. It's likely that you'd have a function to return the 
 Inside `Mail` we don't use `ControllerContext`, so if we have such a function we would need a different type signature. So it could work both from inside `Mail` and a `Controller`.
 The reason we don't have `ControllerContext`, is because a `Mail` can be sent via IHP scripts.
 
-```hasekll
-# Application/Helper/Controller.hs
+```haskell
+-- Application/Helper/Controller.hs
 
 redirectExample :: forall context. (?context :: context, ConfigProvider context) => Text
 redirectExample = urlTo PostsAction
