@@ -16,7 +16,29 @@ After updating your project, please consult the segments from your current relea
     - <script src={assetPath "/vendor/turbolinksMorphdom.js"}></script>
     ```
 
+and add the line
+
+        <meta name="turbo-refresh-method" content="morph"/>
+
+under
+
+    ```haskell
+    metaTags :: Html
+    metaTags = [hsx|
+        <meta charset="utf-8"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
+    ```
+
     **Note**: The behavior of page transitions remains the same. IHP now uses Turbo (successor to Turbolinks) for faster page navigation while maintaining backward compatibility.
+
+In your app.js, you should also make the following change:
+
+    ```diff
+    -$(document).on('ready turbolinks:load', function () {
+    +document.addEventListener('ihp:load', function () {
+    ```
+
+And change any `data-turbolinks-preload` attribute in your HSX / HTML elements to `data-turbo-preload`.
 
 # Upgrade to 1.4.0 from 1.3.0
 
