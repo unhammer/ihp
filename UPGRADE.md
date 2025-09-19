@@ -16,6 +16,8 @@ After updating your project, please consult the segments from your current relea
     - <script src={assetPath "/vendor/turbolinksMorphdom.js"}></script>
     ```
 
+similarly in Makefile (is Makefile still used?)
+
 and add the line
 
         <meta name="turbo-refresh-method" content="morph"/>
