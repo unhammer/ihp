@@ -63,9 +63,9 @@ nix flake lock --update-input ihp
 
 ### Faster Haskell Builds
 
-Uncomment the `configureFlags = [ "--flag FastBuild" ];` and `doHaddock = false;` lines in the `IHP/ihp.nix` for fast rebuilds, otherwise you could up waiting up to half an hour while IHP builds itself.
+Uncomment the `configureFlags = [ "--flag FastBuild" ];` and `doHaddock = false;` lines in the `NixSupport/haskell-packages/ihp.nix` for fast rebuilds, otherwise you could up waiting up to half an hour while IHP builds itself.
 
-We need to make sure not to commit the changes of `IHP/ihp.nix`
+We need to make sure not to commit the changes of `NixSupport/haskell-packages/ihp.nix`
 To help us with that, you can run this from the root of your project `cd IHP && git update-index --assume-unchanged ihp.nix`, so git will ignore your changes.
 
 
