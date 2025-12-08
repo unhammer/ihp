@@ -24,6 +24,7 @@ When upgrading to 1.5.0, in your `Web/View/Layout.hs` (or wherever you include J
 and add the line
 
         <meta name="turbo-refresh-method" content="morph"/>
+        <meta name="turbo-refresh-scroll" content="preserve">
 
 under
 
@@ -56,6 +57,7 @@ If you have actions that respond with a non-redirecting HTML body (like `render 
 
 - Change the action to respond with a `redirectTo` after success, or
 - Mark the corresponding forms/links with `data-turbo="false"` to fall back to a full page load.
+
 
 
 # Upgrade to 1.4.0 from 1.3.0
