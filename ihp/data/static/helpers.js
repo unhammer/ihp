@@ -38,13 +38,6 @@ document.addEventListener('turbo:load', function () {
     document.dispatchEvent(ihpLoadEvent);
 });
 
-// Handle browser back/forward navigation for AJAX-submitted forms
-// When users navigate back/forward through history, reload the page to ensure
-// content matches the URL (since we use AJAX for form submissions)
-window.addEventListener('popstate', function (event) {
-    window.location.reload();
-});
-
 function initTime() {
     if (window.timeago) {
         window.timeago().render(document.querySelectorAll('.time-ago'));
