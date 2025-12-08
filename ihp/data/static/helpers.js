@@ -7,7 +7,7 @@ window.addEventListener('beforeunload', function () {
 
 document.addEventListener('DOMContentLoaded', function () {
     initDelete();
-    initDisableButtonsOnSubmit();
+    initFormSubmission();
     initBack();
     initToggle();
     initTime();
@@ -148,25 +148,6 @@ function initBack() {
             );
         }
     }
-}
-
-function initDisableButtonsOnSubmit() {
-    if (window.initDisableButtonsOnSubmitRun) {
-        return;
-    }
-    window.initDisableButtonsOnSubmitRun = true;
-
-    var lastClicked = null;
-    document.addEventListener('submit', function (event) {
-        event.preventDefault();
-
-        var form = event.target;
-        window.submitForm(form, lastClicked);
-    });
-
-    document.addEventListener('mouseup', function (event) {
-        lastClicked = event.target;
-    });
 }
 
 window.submitForm = function (form, possibleClickedButton) {
@@ -318,6 +299,101 @@ window.submitForm = function (form, possibleClickedButton) {
         window.pauseAutoRefresh();
     }
 };
+
+/**
+ * Set up extra events to run on form submissions.
+ *
+ * Hotwire Turbo already handles javascript form submission; this function ensures
+ * - backwards compatibility with the deprecated data-disable-javascript-submission attribute
+ * - pause/resume of auto-refresh while submitting
+ * - dispatching Event ihp:unload
+ * - clearing intervals and timeouts set with window.setInterval and window.setTimeout
+ */
+function initFormSubmission() {
+    if(!window.Turbo) {
+        console.warn("turbo.js not loaded!");
+        return;
+    }
+
+    // Backwards compatibility: data-disable-javascript-submission → data-turbo="false"
+    function migrateDisableJavascriptSubmission() {
+        document
+            .querySelectorAll("form[data-disable-javascript-submission='true']")
+            .forEach(form => {
+                console.warn("`data-disable-javascript-submission=true` is deprecated, use `data-turbo: false` instead", form);
+                form.setAttribute("data-turbo", "false")
+            });
+    }
+
+    // Ensure all forms have an id
+    // (without this, we get "Uncaught (in promise) DOMException: Element.querySelector: '#' is not a valid selector"
+    // in turbo.js:moveBeforeById)
+    function ensureFormIds() {
+        function mkUniqueId() {
+            // https://stackoverflow.com/a/2117523 since crypto.getRandomUUID() requires https
+            return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, c =>
+                (+c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> +c / 4).toString(16)
+            );
+        }
+        document
+            .querySelectorAll("form").forEach(form => {
+                if(!form.id) {
+                    form.id = "generated-id-" + mkUniqueId();
+                }
+            });
+    }
+
+    // Run the above on first load:
+    migrateDisableJavascriptSubmission();
+    ensureFormIds();
+    // and after every Turbo navigation:
+    document.addEventListener("turbo:load", () => {
+        migrateDisableJavascriptSubmission();
+        ensureFormIds();
+    });
+
+    // Pause live reload / auto-refresh while a Turbo form submission is in progress:
+    document.addEventListener("turbo:before-fetch-request", (event) => {
+        const { formSubmission } = event.detail || {};
+        if (!formSubmission) return; // only form submissions, not plain visits
+        window.liveReloadPaused = true;
+        if (typeof window.pauseAutoRefresh === "function") {
+            window.pauseAutoRefresh();
+        }
+    });
+    // Resume live reload / auto-refresh after the page has been replaced:
+    document.addEventListener("turbo:load", () => {
+        window.liveReloadPaused = false;
+        if (typeof window.resumeAutoRefresh === "function") {
+            window.resumeAutoRefresh();
+        }
+    });
+
+    // Dismiss alerts when a Turbo form submission starts
+    document.addEventListener("turbo:submit-start", (event) => {
+        const form = event.target;
+        if (!(form instanceof HTMLFormElement)) {
+            return;
+        }
+        for (const alert of form.getElementsByClassName("alert")) {
+            if (alert instanceof HTMLDivElement) {
+                alert.classList.add("dismiss");
+            }
+        }
+        // No need to manually disable submit buttons:
+        // https://turbo.hotwired.dev/reference/attributes#automatically-added-attributes
+    });
+
+    // Backwards compatibility: Run IHP's unload hook and cleanup before Turbo renders
+    // a new body/frame (keeps ihpUnloadEvent / clearAllIntervals / clearAllTimeouts
+    // semantics)
+    document.addEventListener("turbo:before-render", () => {
+        document.dispatchEvent(ihpUnloadEvent);
+        window.clearAllIntervals();
+        window.clearAllTimeouts();
+    });
+};
+
 
 function initToggle() {
     var elements = document.querySelectorAll('[data-toggle]');
