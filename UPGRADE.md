@@ -6,7 +6,12 @@ After updating your project, please consult the segments from your current relea
 
 **Replace Turbolinks with Turbo**
 
-    In your `Web/View/Layout.hs` (or wherever you include JavaScript assets), replace the old Turbolinks scripts with the new Turbo script:
+IHP now uses the modern Hotwire Turbo library instead of Turbolinks+Morphdom for fast navigation and Javascript form submission.
+Turbolinks is no longer under development, but Hotwire Turbo covers all the old functionality of Turbolinks+Morphdom, while also being continually developed for modern browsers.
+The behavior of page transitions remains the same (and fixes https://github.com/digitallyinduced/ihp/issues/2063); autorefresh should also work the same without changes.
+The new system should mostly be backwards compatible, though it will require *some* changes.
+
+When upgrading to 1.5.0, in your `Web/View/Layout.hs` (or wherever you include JavaScript assets), replace the old Turbolinks scripts with the new Turbo script:
 
     ```diff
     - <script src={assetPath "/vendor/morphdom-umd.min.js"}></script>
@@ -29,16 +34,29 @@ under
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no"/>
     ```
 
-    **Note**: The behavior of page transitions remains the same. IHP now uses Turbo (successor to Turbolinks) for faster page navigation while maintaining backward compatibility.
-
-In your app.js, you should also make the following change:
+There are no longer any `turbolinks:load` events; IHP now emits the `ihp:load` event after `turbo:load` and `DOMContentLoaded`.
+In your app.js, you should make the following change:
 
     ```diff
     -$(document).on('ready turbolinks:load', function () {
     +document.addEventListener('ihp:load', function () {
     ```
 
-And change any `data-turbolinks-preload` attribute in your HSX / HTML elements to `data-turbo-preload`.
+And in your HSX / HTML elements, you need to change some attributes:
+
+* Instead of `data-turbolinks-preload`, use `data-turbo-preload`
+* Instead of `data-disable-javascript-submission="true"`, use `data-turbo="false"`
+* If you used `<a data-turbolinks="false" href=…>` for download links, change that to simply `<a download href=…>`
+
+You may want to grep your source code for any mention of `turbolinks` in case you were using other Turbolinks features (many of these have corresponding features named `turbo`, compare https://github.com/turbolinks/turbolinks and https://turbo.hotwired.dev/reference/attributes).
+
+**Important**: Turbo expects non-GET requests (e.g. `POST`, `DELETE`) to [respond with a 303 redirect](https://turbo.hotwired.dev/handbook/drive#redirecting-after-a-form-submission) – this is to stay as close as possible to standard browser behavior on such requests.
+
+If you have actions that respond with a non-redirecting HTML body (like `render EditView`) to `POST`/`DELETE`, you may need to either:
+
+- Change the action to respond with a `redirectTo` after success, or
+- Mark the corresponding forms/links with `data-turbo="false"` to fall back to a full page load.
+
 
 # Upgrade to 1.4.0 from 1.3.0
 
