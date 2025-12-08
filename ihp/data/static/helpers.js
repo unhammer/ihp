@@ -72,58 +72,35 @@ function initTime() {
     });
 }
 
+/**
+ * Use turbo to handle <a href="…" class="js-delete">
+ */
 function initDelete() {
+    const turboSearchEscapeMarker = "_TURBO_SEARCH_MARKER_";
     document.querySelectorAll('.js-delete').forEach(function (elem) {
         if (Boolean(elem.jsDeleteInitialized) === false) {
-            elem.addEventListener('click', handleClick);
             elem.jsDeleteInitialized = true;
-            // Prevent Turbo from prefetching DELETE links
-            elem.setAttribute('data-turbo-prefetch', 'false');
+            elem.setAttribute('data-turbo-prefetch', 'false'); // prevent Turbo from prefetching DELETE links
+            elem.setAttribute('data-turbo-method', 'delete');
+            if (!elem.classList.contains('js-delete-no-confirm')) {
+                let confirmText = elem.dataset.confirm || 'Are you sure you want to delete this?';
+                elem.setAttribute('data-turbo-confirm', confirmText);
+            }
+            // Workaround for https://github.com/hotwired/turbo/commit/f8b0e17a0c605080de0097112a5cf408abef9bb1
+            // Escape the `search` part of the href to override turbo's search-to-formbody feature:
+            let url = new URL(elem.href, document.baseURI);
+            let search = url.search.replace(/^[?]+/,"");
+            Object.assign(url, { search: "" });
+            elem.href = url.toString() + turboSearchEscapeMarker + search;
         }
     });
-
-    function validTargetElement(elem) {
-        if (elem instanceof HTMLAnchorElement === false) {
-            console.error('.js-delete only supports <a> elements', elem);
-            return false;
-        }
-
-        if (elem.classList.contains('js-delete') === false) {
-            // In case the `.js-delete` class was removed, and event listener is not detached. (after Turbo DOM update)
-            return false;
-        }
-
-        return true;
-    }
-
-    function handleClick(event) {
-        if (validTargetElement(event.currentTarget) === false) return;
-
-        event.preventDefault();
-
-        if (!event.currentTarget.classList.contains('js-delete-no-confirm')) {
-            var confirmText =
-                event.currentTarget.dataset.confirm ||
-                'Are you sure you want to delete this?';
-            if (!confirm(confirmText)) {
-                return;
-            }
-        }
-
-        var form = document.createElement('form');
-        form.action = event.currentTarget.href;
-        form.method = 'POST';
-
-        var methodInput = document.createElement('input');
-        methodInput.type = 'hidden';
-        methodInput.name = '_method';
-        methodInput.value = 'DELETE';
-
-        form.appendChild(methodInput);
-
-        document.body.appendChild(form);
-        window.submitForm(form, null);
-    }
+    document.addEventListener('turbo:submit-start', function({target, detail}) {
+        // Unescape the url before submitting:
+        let url = target.action.replace(turboSearchEscapeMarker, "?");
+        detail.formSubmission.fetchRequest.url = url;
+        detail.formSubmission.fetchRequest.target.action = url;
+        // TODO: seems to have no effect?
+    });
 }
 
 function initBack() {
